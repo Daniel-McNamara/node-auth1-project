@@ -1,13 +1,31 @@
-const express = require('express'); // import the express package
+const express = require("express");
+const session = require("express-session");
 
-const server = express(); // creates the server
+const authRouter = require("./auth/authRouter");
+const usersRouter = require("./users/usersRouter");
+const authOnly = require("./auth/auth-mw");
 
-// handle requests to the root of the api, the / route
-server.get('/', (req, res) => {
-  res.send('Hello from Express');
+const server = express();
+
+const sessionConfig = {
+    secret: "some sort of secret",
+    cookie: {
+      maxAge: 1000 * 60 * 60,
+      secure: false, // true in production sends only over https
+      httpOnly: true // true means no access from JS
+    },
+    resave: false,
+    saveUninitialized: true // GDPR laws require check w/ client
+  };
+  
+server.use(express.json());
+server.use(session(sessionConfig));
+
+server.use("/api/auth", authRouter);
+server.use("/api/users", authOnly, usersRouter);
+
+server.get("/", (req, res) => {
+  res.status(200).json({ message: "API is up!" });
 });
 
-// watch for connections on port 5000
-server.listen(5000, () =>
-  console.log('Server running on http://localhost:5000')
-);
+module.exports = server;
